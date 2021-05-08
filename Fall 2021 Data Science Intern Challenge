@@ -1,0 +1,81 @@
+Fall 2021 Data Science Intern Challenge 
+
+Please complete the following questions, and provide your thought process/work. You can attach your work in a text file, link, etc. on the application page. 
+Please ensure answers are easily visible for reviewers!
+
+Question 1: Given some sample data, write a program to answer the following: click here to access the required data set
+
+On Shopify, we have exactly 100 sneaker shops, and each of these shops sells only one model of shoe. We want to do some analysis of the average order value (AOV). 
+When we look at orders data over a 30 day window, we naively calculate an AOV of $3145.13. Given that we know these shops are selling sneakers, a relatively affordable item, 
+something seems wrong with our analysis. 
+
+a.	Think about what could be going wrong with our calculation. Think about a better way to evaluate this data. 
+    i.	Most purchases are relatively small (1-3 pieces). However, every so often, there is a massive purchase from a Shopify location (i.e, order_id ‘16’). 
+    This massive purchase heavily impacts the mean value of the total monthly sales of all locations, which is why we get $3145.13. 
+    ii.	Shop 42 and 78 are the main culprits. Shop 42 frequently makes sales of 2000 units and shop 78’s sale prices don’t make sense with the quantities being 
+    sold (i.e 25K for a single item) 
+    iii.	These ’Outliers’ could be from a couple main factors. One is from human error when inputting the data and the other is that there are these large purchases 
+    made every so often. Without further research or communication with the data provider, it would be difficult to determine which case this is. 
+    However, if I had to make a guess, I would say that shop 42 could be a large wholesaler making large sales, while shop 78 is erroneously inputting their sales data. 
+    iv.	To get a better representation of the average sales of a location we can do a few things. The first thing would be to handle these outliers from the data set so 
+    that we can calculate the monthly averages without the outliers. We could drop these rows entirely or replace their values with the mean values for order amount and 
+    total items. Another method would be to take the median value (Median Order Value), instead of the mean, in order to get a numerical representation of the sales numbers 
+    without the influence of the outliers. One final approach we could use, would be to cluster similar locations together and give mean values for each cluster. This would 
+    put the ‘Outlier’ groups into their own cluster and would not impact the value for all the remaining stores. 
+    v.	All of these methods would result in insights that are more in tune with what is actually happening.
+    
+b.	What metric would you report for this dataset?
+    i.	I would report the AOV over 30 days after removing the outlier locations 42 and 78.
+    
+c.	What is its value?
+    i.	import pandas as pd
+
+    #import dataset
+    src = pd.read_csv('../Documents/DataSets/2019 Winter Data Science Intern Challenge Data Set - Sheet1.csv')
+
+    #drop outlier shops
+    drop_shops = [42, 78]
+    drop_rows = src.loc[(src['shop_id'] == 42) | (src['shop_id'] == 78)]
+    src.drop(drop_rows.index, inplace = True)
+
+    #convert 'created_at' to datetime, then group by month and take mean value of order_amount
+    src['created_at'] = pd.to_datetime(src['created_at'])
+    src.groupby(pd.Grouper(key='created_at',freq='M')).mean()
+
+    Answer:
+    $300.16
+
+
+
+Question 2: For this question you’ll need to use SQL. Follow this link to access the data set required for the challenge. Please use queries to answer the following questions. 
+Paste your queries along with your final numerical answers below.
+
+a.	How many orders were shipped by Speedy Express in total?
+    I.	54
+    II.	SELECT COUNT(*) FROM Orders
+    WHERE Orders.ShipperID in
+      (SELECT Shippers.ShipperID FROM Shippers
+      WHERE Shippers.ShipperName is 'Speedy Express')
+      
+b.	What is the last name of the employee with the most orders?
+    I.	Peacock
+    II.	SELECT LastName FROM Employees
+    WHERE Employees.EmployeeID in
+      (SELECT EmployeeID FROM Orders
+      GROUP BY Orders.EmployeeID
+      ORDER BY COUNT(*) DESC
+      LIMIT 1)
+      
+c.	What product was ordered the most by customers in Germany?
+    I.	Lakkalikoori
+    II.	SELECT ProductName FROM Products
+    WHERE Products.ProductID in
+      (SELECT ProductID FROM OrderDetails
+      WHERE OrderDetails.OrderID in
+        (SELECT OrderID FROM [Orders]
+        WHERE Orders.CustomerID in
+            (SELECT CustomerID FROM Customers
+            WHERE Customers.Country is 'Germany')))
+    GROUP BY ProductID
+    ORDER BY ProductID DESC
+    LIMIT 1
